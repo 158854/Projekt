@@ -1,0 +1,104 @@
+Zapytanie wyszukująca gitary
+
+SELECT * FROM produkt WHERE produkt.Nazwa LIKE '%gitara%';
+
+------------------------------------------------------------------------------------
+
+Zapytanie modyfikujące nazwę konkretnego produktu
+
+UPDATE produkt SET nazwa ='Whitestar' WHERE produkt.ID_Produkt=101;
+
+------------------------------------------------------------------------------------
+
+Zapytanie usuwające konkretny rekord
+
+DELETE FROM produkt WHERE ID_Produkt='103';
+
+------------------------------------------------------------------------------------
+
+Zapytania dodające klienta i pracownika
+
+INSERT INTO adresy(ID_Adres,Wojewodztwo,Miasto,Ulica,Kod_pocztowy,Nr_domu) 
+VALUES (13,'Podkarpackie','Jaslo','Robotnicza','32-144','18');
+INSERT INTO klienci (ID_Klienta,Imie_Klienta,Nazwisko_Klienta,ID_Adres) 
+VALUES (13,'Przemyslaw','Pioro', 13);
+
+
+INSERT INTO adresy (ID_Adres,Wojewodztwo,Miasto,Ulica,Kod_pocztowy,Nr_domu) 
+VALUES (85,'Podkarpackie','Przemysl','Parkowa','36-654','54');
+INSERT INTO pracownicy (ID_Pracownika,Imie_Pracownika,Nazwisko_pracownika, Data_zatrudnienia, id_adres, login, haslo) 
+VALUES (85,'Kazimierz', 'Zajac', '2020/01/01',85,'login5', 'haslo5');
+
+
+------------------------------------------------------------------------------------
+
+Zapytanie wypisujące adresy klientów i pracowników
+
+SELECT klienci.Imie_Klienta, klienci.Nazwisko_Klienta, adresy.Miasto, adresy.Ulica, adresy.Nr_domu 
+FROM klienci
+INNER JOIN adresy ON klienci.ID_Adres = adresy.ID_Adres
+ORDER BY klienci.Nazwisko_Klienta asc;
+
+
+SELECT pracownicy.Imie_Pracownika, pracownicy.Nazwisko_Pracownika, adresy.Miasto, adresy.Ulica, adresy.Nr_domu 
+FROM pracownicy
+INNER JOIN adresy ON pracownicy.ID_adres = adresy.ID_Adres
+ORDER BY pracownicy.Nazwisko_Pracownika asc;
+
+------------------------------------------------------------------------------------
+
+Zapytania wyświetlające raport ze sprzedaży
+
+SELECT
+	sprzedaz.ID_Transakcji AS ID, produkt.Nazwa,
+	CONCAT (klienci.Imie_Klienta ,' ', klienci.Nazwisko_Klienta) AS 'Klient',
+	CONCAT (pracownicy.Imie_Pracownika ,' ', pracownicy.Nazwisko_Pracownika) AS 'Pracownik',
+	sprzedaz.Data_sprzedazy,
+	sprzedaz.Ilosc_sprz_egz AS Ilosc,
+	CASE WHEN klienci.ID_Klienta IS NOT NULL 
+		THEN ((produkt.Cena * sprzedaz.Ilosc_sprz_egz) * 0.9) 
+		ELSE (produkt.Cena * sprzedaz.Ilosc_sprz_egz)
+	END AS Wartosc
+FROM sprzedaz
+	INNER JOIN produkt ON sprzedaz.ID_Produkt = produkt.ID_Produkt
+	LEFT JOIN klienci ON sprzedaz.ID_Klienta = klienci.ID_Klienta
+	INNER JOIN pracownicy ON sprzedaz.ID_Pracownika = pracownicy.ID_Pracownika
+ORDER BY ID_Transakcji ASC;
+
+
+
+------------------------------------------------------------------------------------
+
+Zapytanie zliczające wartości zamówień dla poszczególnych klientów
+
+SELECT
+	COUNT(sprzedaz.ID_Transakcji) AS Ilosc_Transakcji,
+	CONCAT (klienci.Imie_Klienta, ' ' ,klienci.Nazwisko_Klienta) AS 'Klient',
+	SUM(produkt.Cena * sprzedaz.Ilosc_sprz_egz * 0.9) AS Wartosc 
+FROM sprzedaz
+	INNER JOIN produkt ON sprzedaz.ID_Produkt = produkt.ID_Produkt
+	INNER JOIN klienci ON sprzedaz.ID_Klienta = klienci.ID_Klienta
+GROUP BY klienci.ID_Klienta
+ORDER BY klienci.ID_Klienta;
+
+
+------------------------------------------------------------------------------------
+
+Zapytania pozwalające sprzedać dany produkt.
+
+SELECT ID_Produkt AS ID, Nazwa, Cena, Ilosc FROM produkt WHERE Nazwa LIKE'%ziggy%';
+
+
+INSERT INTO 
+sprzedaz(ID_Klienta,ID_Pracownika,ID_Produkt,Data_sprzedazy,Ilosc_sprz_egz)
+VALUES
+(NULL, 82, 102, CURRENT_DATE, 1);
+
+UPDATE produkt, sprzedaz 
+SET produkt.Ilosc = (produkt.Ilosc - sprzedaz.Ilosc_sprz_egz)
+WHERE sprzedaz.ID_Transakcji=LAST_INSERT_ID()
+AND produkt.ID_Produkt = sprzedaz.ID_Produkt;
+
+------------------------------------------------------------------------------------
+
+
